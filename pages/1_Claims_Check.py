@@ -204,7 +204,7 @@ with st.sidebar:
         st.session_state.extracted_invoice_data = None
         st.session_state.extracted_policy_data = None
         st.session_state.comparison_results = None
-        st.experimental_rerun()
+        st.rerun()
 
 # Main content
 if 'openai_api_key' in st.session_state:
