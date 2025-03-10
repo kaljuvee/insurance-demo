@@ -13,7 +13,7 @@ A Streamlit application that helps insurance professionals and policyholders ana
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/insurance-demo.git
+   git clone https://github.com/kaljuvee/insurance-demo.git
    cd insurance-demo
    ```
 
