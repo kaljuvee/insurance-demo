@@ -1,4 +1,8 @@
 import streamlit as st
+from utils import load_api_keys
+
+# Load API keys from .env file
+api_keys_loaded = load_api_keys()
 
 st.set_page_config(
     page_title="Insurance Claims Analyzer",
@@ -43,6 +47,34 @@ This application helps insurance professionals and policyholders analyze and com
 *This tool uses OpenAI and Anthropic language models to extract and analyze content.*
 """)
 
-# Display sample images or icons in the sidebar
+# Display API key status in the sidebar
 st.sidebar.title("Navigation")
-st.sidebar.info("Select a page from the dropdown above") 
+st.sidebar.info("Select a page from the dropdown above")
+
+# Show API key status
+st.sidebar.markdown("---")
+st.sidebar.header("API Key Status")
+
+if api_keys_loaded['openai_api_key']:
+    st.sidebar.success("✅ OpenAI API key loaded")
+else:
+    st.sidebar.warning("⚠️ OpenAI API key not found in .env file")
+
+if api_keys_loaded['anthropic_api_key']:
+    st.sidebar.success("✅ Anthropic API key loaded")
+else:
+    st.sidebar.info("ℹ️ Anthropic API key not found (optional)")
+
+st.sidebar.markdown("""
+### Setup Instructions
+
+1. Create a `.env` file in the root directory
+2. Add your API keys in the following format:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   ```
+3. Restart the application if needed
+
+You can also enter API keys directly in each tool page.
+""") 

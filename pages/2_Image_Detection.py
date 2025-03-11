@@ -8,6 +8,7 @@ import json
 import pandas as pd
 from openai import OpenAI
 from anthropic import Anthropic
+from utils import load_api_keys
 
 st.set_page_config(
     page_title="Image Detection",
@@ -17,6 +18,9 @@ st.set_page_config(
 
 st.title("Image Detection")
 st.markdown("Upload images of damaged property to identify features and potential damage")
+
+# Load API keys from .env file
+api_keys_loaded = load_api_keys()
 
 # Initialize session state variables if they don't exist
 if 'image_analysis_results' not in st.session_state:
@@ -297,17 +301,31 @@ def json_to_df(json_data, exclude_keys=None):
 with st.sidebar:
     st.header("API Keys")
     
-    # OpenAI API Key
-    openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
+    # Show status of loaded API keys
+    if api_keys_loaded['openai_api_key']:
+        st.success("OpenAI API key loaded from .env file")
+    else:
+        st.warning("OpenAI API key not found in .env file")
+        
+    if api_keys_loaded['anthropic_api_key']:
+        st.success("Anthropic API key loaded from .env file")
+    else:
+        st.info("Anthropic API key not found in .env file (optional)")
+    
+    # Optional override for API keys
+    st.subheader("Override API Keys (Optional)")
+    
+    # OpenAI API Key override
+    openai_api_key = st.text_input("Enter OpenAI API key to override", type="password")
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
-        st.success("OpenAI API key set!")
+        st.success("OpenAI API key override applied!")
     
-    # Anthropic API Key
-    anthropic_api_key = st.text_input("Enter your Anthropic API key (optional)", type="password")
+    # Anthropic API Key override
+    anthropic_api_key = st.text_input("Enter Anthropic API key to override", type="password")
     if anthropic_api_key:
         st.session_state.anthropic_api_key = anthropic_api_key
-        st.success("Anthropic API key set!")
+        st.success("Anthropic API key override applied!")
     
     st.markdown("---")
     
@@ -317,6 +335,10 @@ with st.sidebar:
         "Choose AI model for analysis:",
         ["OpenAI GPT-4o", "Anthropic Claude 3 Opus"]
     )
+    
+    # If Anthropic is selected but no API key is available, show warning
+    if model_option == "Anthropic Claude 3 Opus" and 'anthropic_api_key' not in st.session_state:
+        st.warning("Anthropic API key is required for Claude model. Please add it to your .env file or enter it above.")
     
     # Analysis type
     st.header("Analysis Type")
@@ -348,7 +370,7 @@ if 'openai_api_key' in st.session_state:
             st.info("Using demo image of property damage")
             # Display demo image
             demo_image_path = "https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/damage_demo.jpg"
-            st.image(demo_image_path, caption="Demo Image - Property Damage", use_column_width=True)
+            st.image(demo_image_path, caption="Demo Image - Property Damage", use_container_width=True)
             
             # Analyze button for demo image
             if st.button("Analyze Demo Image"):
@@ -364,72 +386,10 @@ if 'openai_api_key' in st.session_state:
                         # Convert to base64
                         image_base64 = base64.b64encode(image_bytes.getvalue()).decode('utf-8')
                         
-                        # Perform analysis based on selected type
-                        if analysis_type == "OCR (Text Extraction)":
-                            model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
-                            result = extract_text_from_image(image_base64, model)
-                            st.session_state.extracted_text = result
-                            st.session_state.image_analysis_results = {"extracted_text": result}
-                        elif analysis_type == "Damage Assessment":
-                            model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
-                            result = analyze_damage_in_image(image_base64, model)
-                            st.session_state.damage_assessment = result
-                            st.session_state.image_analysis_results = result
-                        else:  # Comprehensive Analysis
-                            if model_option == "OpenAI GPT-4o":
-                                prompt = """
-                                Provide a comprehensive analysis of this image including all sections specified in the output format:
-                                1. Image Overview
-                                2. Property Details
-                                3. Damage Assessment
-                                4. Cause Analysis
-                                5. Severity Rating
-                                6. Documentation Quality
-                                7. Extracted Text
-                                8. Recommendations
-                                
-                                Be thorough and detailed in your analysis.
-                                """
-                                result = analyze_image_with_openai(image_base64, prompt, structured_output)
-                            else:
-                                prompt = """
-                                Provide a comprehensive analysis of this image including all sections specified in the output format:
-                                1. Image Overview
-                                2. Property Details
-                                3. Damage Assessment
-                                4. Cause Analysis
-                                5. Severity Rating
-                                6. Documentation Quality
-                                7. Extracted Text
-                                8. Recommendations
-                                
-                                Be thorough and detailed in your analysis.
-                                """
-                                result = analyze_image_with_anthropic(image_base64, prompt, structured_output)
-                            
-                            st.session_state.image_analysis_results = result
-                        
-                        st.success("Analysis completed!")
-                        # Switch to results tab
-                        tabs[1].active = True
-                    except Exception as e:
-                        st.error(f"Error analyzing image: {str(e)}")
-        else:
-            # User upload
-            uploaded_image = st.file_uploader("Upload an image of property damage", type=["jpg", "jpeg", "png"])
-            
-            if uploaded_image:
-                # Display the uploaded image
-                image = Image.open(uploaded_image)
-                st.image(image, caption="Uploaded Image", use_column_width=True)
-                
-                # Convert image to base64
-                image_base64 = encode_image_to_base64(uploaded_image)
-                
-                # Analysis button
-                if st.button("Analyze Image"):
-                    with st.spinner("Analyzing image..."):
-                        try:
+                        # Check if selected model is available
+                        if model_option == "Anthropic Claude 3 Opus" and 'anthropic_api_key' not in st.session_state:
+                            st.error("Anthropic API key is required for Claude model. Please add it to your .env file or enter it in the sidebar.")
+                        else:
                             # Perform analysis based on selected type
                             if analysis_type == "OCR (Text Extraction)":
                                 model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
@@ -478,6 +438,76 @@ if 'openai_api_key' in st.session_state:
                             st.success("Analysis completed!")
                             # Switch to results tab
                             tabs[1].active = True
+                    except Exception as e:
+                        st.error(f"Error analyzing image: {str(e)}")
+        else:
+            # User upload
+            uploaded_image = st.file_uploader("Upload an image of property damage", type=["jpg", "jpeg", "png"])
+            
+            if uploaded_image:
+                # Display the uploaded image
+                image = Image.open(uploaded_image)
+                st.image(image, caption="Uploaded Image", use_container_width=True)
+                
+                # Convert image to base64
+                image_base64 = encode_image_to_base64(uploaded_image)
+                
+                # Analysis button
+                if st.button("Analyze Image"):
+                    with st.spinner("Analyzing image..."):
+                        try:
+                            # Check if selected model is available
+                            if model_option == "Anthropic Claude 3 Opus" and 'anthropic_api_key' not in st.session_state:
+                                st.error("Anthropic API key is required for Claude model. Please add it to your .env file or enter it in the sidebar.")
+                            else:
+                                # Perform analysis based on selected type
+                                if analysis_type == "OCR (Text Extraction)":
+                                    model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                    result = extract_text_from_image(image_base64, model)
+                                    st.session_state.extracted_text = result
+                                    st.session_state.image_analysis_results = {"extracted_text": result}
+                                elif analysis_type == "Damage Assessment":
+                                    model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                    result = analyze_damage_in_image(image_base64, model)
+                                    st.session_state.damage_assessment = result
+                                    st.session_state.image_analysis_results = result
+                                else:  # Comprehensive Analysis
+                                    if model_option == "OpenAI GPT-4o":
+                                        prompt = """
+                                        Provide a comprehensive analysis of this image including all sections specified in the output format:
+                                        1. Image Overview
+                                        2. Property Details
+                                        3. Damage Assessment
+                                        4. Cause Analysis
+                                        5. Severity Rating
+                                        6. Documentation Quality
+                                        7. Extracted Text
+                                        8. Recommendations
+                                        
+                                        Be thorough and detailed in your analysis.
+                                        """
+                                        result = analyze_image_with_openai(image_base64, prompt, structured_output)
+                                    else:
+                                        prompt = """
+                                        Provide a comprehensive analysis of this image including all sections specified in the output format:
+                                        1. Image Overview
+                                        2. Property Details
+                                        3. Damage Assessment
+                                        4. Cause Analysis
+                                        5. Severity Rating
+                                        6. Documentation Quality
+                                        7. Extracted Text
+                                        8. Recommendations
+                                        
+                                        Be thorough and detailed in your analysis.
+                                        """
+                                        result = analyze_image_with_anthropic(image_base64, prompt, structured_output)
+                                    
+                                    st.session_state.image_analysis_results = result
+                                
+                                st.success("Analysis completed!")
+                                # Switch to results tab
+                                tabs[1].active = True
                         except Exception as e:
                             st.error(f"Error analyzing image: {str(e)}")
     
@@ -672,4 +702,4 @@ if 'openai_api_key' in st.session_state:
         else:
             st.info("No saved analyses yet. Analyze an image and click 'Save Analysis for Claims' to save it here.")
 else:
-    st.info("Please enter your OpenAI API key in the sidebar to use this application") 
+    st.warning("OpenAI API key is required. Please add it to your .env file or enter it in the sidebar.") 

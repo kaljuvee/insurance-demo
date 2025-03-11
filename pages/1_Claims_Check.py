@@ -9,6 +9,7 @@ import json
 import re
 from io import StringIO
 from PIL import Image
+from utils import load_api_keys
 
 st.set_page_config(
     page_title="Claims Check",
@@ -18,6 +19,9 @@ st.set_page_config(
 
 st.title("Claims Check")
 st.markdown("Upload invoice/claim documents and compare them against policy contracts")
+
+# Load API keys from .env file
+api_keys_loaded = load_api_keys()
 
 # Initialize session state variables if they don't exist
 if 'extracted_claim_data' not in st.session_state:
@@ -186,13 +190,20 @@ def json_to_df(json_data):
 
 # API Key input
 with st.sidebar:
-    st.header("OpenAI API Key")
-    openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
+    st.header("API Keys")
+    
+    # Show status of loaded API keys
+    if api_keys_loaded['openai_api_key']:
+        st.success("OpenAI API key loaded from .env file")
+    else:
+        st.warning("OpenAI API key not found in .env file")
+    
+    # Optional override for OpenAI API key
+    st.subheader("Override API Key (Optional)")
+    openai_api_key = st.text_input("Enter OpenAI API key to override", type="password")
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
-        st.success("API key set successfully!")
-    else:
-        st.warning("Please enter your OpenAI API key to use this application")
+        st.success("API key override applied!")
     
     # Demo data checkbox
     st.header("Demo Options")
@@ -209,7 +220,7 @@ with st.sidebar:
 # Main content
 if 'openai_api_key' in st.session_state:
     # Create tabs for different sections
-    tabs = st.tabs(["Document Analysis", "Image Analysis Integration", "Results"])
+    tabs = st.tabs(["Document Analysis", "Image Analysis Integration", "Compare"])
     
     with tabs[0]:
         # Demo data section
@@ -222,11 +233,6 @@ if 'openai_api_key' in st.session_state:
             with col1:
                 st.header("Claim Document")
                 st.markdown("Using: **insurance-claim-kristjan-tamm-001.pdf**")
-                
-                # Display a preview image
-                st.image("https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/claim_preview.png", 
-                         caption="Claim Document Preview", 
-                         use_column_width=True)
                 
                 if st.button("Extract Claim Data"):
                     with st.spinner("Analyzing claim with AI..."):
@@ -247,11 +253,6 @@ if 'openai_api_key' in st.session_state:
                 st.header("Invoice Document")
                 st.markdown("Using: **invoice-kristjan-tamm-001.pdf**")
                 
-                # Display a preview image
-                st.image("https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/invoice_preview.png", 
-                         caption="Invoice Document Preview", 
-                         use_column_width=True)
-                
                 if st.button("Extract Invoice Data"):
                     with st.spinner("Analyzing invoice with AI..."):
                         try:
@@ -270,11 +271,6 @@ if 'openai_api_key' in st.session_state:
             with col3:
                 st.header("Policy Contract")
                 st.markdown("Using: **insurance-contract-kristjan-tamm.pdf**")
-                
-                # Display a preview image
-                st.image("https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/policy_preview.png", 
-                         caption="Policy Contract Preview", 
-                         use_column_width=True)
                 
                 if st.button("Extract Policy Data"):
                     with st.spinner("Analyzing policy with AI..."):
@@ -456,7 +452,7 @@ if 'openai_api_key' in st.session_state:
                         return ['background-color: #ffcccc'] * len(row)
                     return [''] * len(row)
                 
-                st.dataframe(comparison_df.style.apply(highlight_mismatches, axis=1))
+                st.dataframe(comparison_df.style.apply(highlight_mismatches, axis=1), use_container_width=True)
             else:
                 st.write("No comparison data available")
             
@@ -473,7 +469,7 @@ if 'openai_api_key' in st.session_state:
                         return ['background-color: #ffffcc'] * len(row)
                     return [''] * len(row)
                 
-                st.dataframe(discrepancies_df.style.apply(highlight_severity, axis=1))
+                st.dataframe(discrepancies_df.style.apply(highlight_severity, axis=1), use_container_width=True)
             else:
                 st.write("No discrepancies found")
             
@@ -495,4 +491,4 @@ if 'openai_api_key' in st.session_state:
             ):
                 st.success("Report downloaded successfully!")
 else:
-    st.info("Please enter your OpenAI API key in the sidebar to use this application") 
+    st.warning("OpenAI API key is required. Please add it to your .env file or enter it in the sidebar.") 
