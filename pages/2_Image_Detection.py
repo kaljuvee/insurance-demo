@@ -266,6 +266,84 @@ def analyze_damage_in_image(image_base64, model="openai"):
     else:
         return analyze_image_with_anthropic(image_base64, prompt, structured_output=True)
 
+def detect_fraud_in_image(image_base64, model="openai"):
+    """Detect potential fraud in images using AI"""
+    prompt = """
+    Analyze this image for potential fraud indicators. Look for:
+    1. Signs of digital manipulation or photo editing
+    2. Inconsistent lighting, shadows, or perspectives
+    3. Suspicious damage patterns that seem staged
+    4. Signs of image splicing or compositing
+    5. Unusual artifacts or inconsistencies
+    6. Signs of repeated or copied elements
+    7. Metadata inconsistencies or suspicious timestamps
+    
+    Return your analysis as a JSON object with the following structure:
+    {
+        "fraud_risk_score": 0-100,
+        "risk_level": "low/medium/high",
+        "fraud_indicators": [
+            {
+                "indicator": "Description of the fraud indicator",
+                "severity": "low/medium/high",
+                "confidence": 0-100,
+                "explanation": "Detailed explanation"
+            }
+        ],
+        "manipulation_techniques": ["Technique 1", "Technique 2"],
+        "authenticity_assessment": "authentic/suspicious/fraudulent",
+        "recommendations": ["Recommendation 1", "Recommendation 2"]
+    }
+    """
+    
+    if model == "openai":
+        return analyze_image_with_openai(image_base64, prompt, structured_output=True)
+    else:
+        return analyze_image_with_anthropic(image_base64, prompt, structured_output=True)
+
+def detect_false_positives_negatives(image_base64, model="openai"):
+    """Detect false positives and negatives in damage assessment"""
+    prompt = """
+    Analyze this image to detect potential false positives or negatives in damage assessment.
+    
+    Look for:
+    1. Images with no actual damage but presented as damaged
+    2. Images with damage that might be overlooked
+    3. Staged or exaggerated damage
+    4. Normal wear and tear presented as damage
+    5. Pre-existing conditions vs. new damage
+    6. Context that might explain the condition
+    
+    Return your analysis as a JSON object with the following structure:
+    {
+        "false_positive_score": 0-100,
+        "false_negative_score": 0-100,
+        "overall_accuracy_score": 0-100,
+        "assessment_confidence": 0-100,
+        "false_positive_indicators": [
+            {
+                "indicator": "Description of false positive indicator",
+                "severity": "low/medium/high",
+                "explanation": "Why this might be a false positive"
+            }
+        ],
+        "false_negative_indicators": [
+            {
+                "indicator": "Description of false negative indicator", 
+                "severity": "low/medium/high",
+                "explanation": "Why damage might be missed"
+            }
+        ],
+        "context_analysis": "Analysis of image context and circumstances",
+        "recommendations": ["Recommendation 1", "Recommendation 2"]
+    }
+    """
+    
+    if model == "openai":
+        return analyze_image_with_openai(image_base64, prompt, structured_output=True)
+    else:
+        return analyze_image_with_anthropic(image_base64, prompt, structured_output=True)
+
 def json_to_df(json_data, exclude_keys=None):
     """Convert JSON data to a pandas DataFrame for display"""
     if exclude_keys is None:
@@ -344,7 +422,7 @@ with st.sidebar:
     st.header("Analysis Type")
     analysis_type = st.radio(
         "Choose analysis type:",
-        ["Comprehensive Analysis", "Damage Assessment", "OCR (Text Extraction)"]
+        ["Comprehensive Analysis", "Damage Assessment", "Fraud Detection", "False Positive/Negative Detection", "OCR (Text Extraction)"]
     )
     
     # Output format
@@ -367,24 +445,64 @@ if 'openai_api_key' in st.session_state:
         use_demo = st.checkbox("Use demo image")
         
         if use_demo:
-            st.info("Using demo image of property damage")
-            # Display demo image
-            demo_image_path = "https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/damage_demo.jpg"
-            st.image(demo_image_path, caption="Demo Image - Property Damage", use_container_width=True)
+            st.info("Using demo image from data folder")
+            
+            # Get available images from data folder
+            import os
+            from pathlib import Path
+            
+            data_path = Path("data")
+            available_images = []
+            
+            if data_path.exists():
+                for file_path in data_path.rglob("*"):
+                    if file_path.is_file() and file_path.suffix.lower() in ['.jpg', '.jpeg', '.png']:
+                        available_images.append({
+                            "name": file_path.name,
+                            "path": str(file_path),
+                            "relative_path": str(file_path.relative_to(data_path))
+                        })
+            
+            if available_images:
+                # Let user select from available images
+                selected_image = st.selectbox(
+                    "Select a demo image:",
+                    available_images,
+                    format_func=lambda x: f"{x['name']} ({x['relative_path']})"
+                )
+                
+                if selected_image:
+                    # Display selected image
+                    st.image(selected_image['path'], caption=f"Demo Image - {selected_image['name']}", use_container_width=True)
+                    
+                    # Store selected image for analysis
+                    st.session_state.selected_demo_image = selected_image
+            else:
+                st.warning("No images found in data folder")
+                # Fallback to original demo image
+                demo_image_path = "https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/damage_demo.jpg"
+                st.image(demo_image_path, caption="Demo Image - Property Damage", use_container_width=True)
             
             # Analyze button for demo image
             if st.button("Analyze Demo Image"):
-                with st.spinner("Downloading and analyzing demo image..."):
+                with st.spinner("Analyzing demo image..."):
                     try:
-                        import requests
-                        from io import BytesIO
-                        
-                        # Download the image
-                        response = requests.get(demo_image_path)
-                        image_bytes = BytesIO(response.content)
-                        
-                        # Convert to base64
-                        image_base64 = base64.b64encode(image_bytes.getvalue()).decode('utf-8')
+                        # Use selected demo image if available
+                        if hasattr(st.session_state, 'selected_demo_image') and st.session_state.selected_demo_image:
+                            selected_image = st.session_state.selected_demo_image
+                            
+                            # Read image from local path
+                            with open(selected_image['path'], 'rb') as image_file:
+                                image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                        else:
+                            # Fallback to original demo image
+                            import requests
+                            from io import BytesIO
+                            
+                            demo_image_path = "https://raw.githubusercontent.com/kaljuvee/insurance-demo/main/data/damage_demo.jpg"
+                            response = requests.get(demo_image_path)
+                            image_bytes = BytesIO(response.content)
+                            image_base64 = base64.b64encode(image_bytes.getvalue()).decode('utf-8')
                         
                         # Check if selected model is available
                         if model_option == "Anthropic Claude 3 Opus" and 'anthropic_api_key' not in st.session_state:
@@ -400,6 +518,16 @@ if 'openai_api_key' in st.session_state:
                                 model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
                                 result = analyze_damage_in_image(image_base64, model)
                                 st.session_state.damage_assessment = result
+                                st.session_state.image_analysis_results = result
+                            elif analysis_type == "Fraud Detection":
+                                model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                result = detect_fraud_in_image(image_base64, model)
+                                st.session_state.fraud_detection = result
+                                st.session_state.image_analysis_results = result
+                            elif analysis_type == "False Positive/Negative Detection":
+                                model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                result = detect_false_positives_negatives(image_base64, model)
+                                st.session_state.false_positive_analysis = result
                                 st.session_state.image_analysis_results = result
                             else:  # Comprehensive Analysis
                                 if model_option == "OpenAI GPT-4o":
@@ -471,6 +599,16 @@ if 'openai_api_key' in st.session_state:
                                     result = analyze_damage_in_image(image_base64, model)
                                     st.session_state.damage_assessment = result
                                     st.session_state.image_analysis_results = result
+                                elif analysis_type == "Fraud Detection":
+                                    model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                    result = detect_fraud_in_image(image_base64, model)
+                                    st.session_state.fraud_detection = result
+                                    st.session_state.image_analysis_results = result
+                                elif analysis_type == "False Positive/Negative Detection":
+                                    model = "openai" if model_option == "OpenAI GPT-4o" else "anthropic"
+                                    result = detect_false_positives_negatives(image_base64, model)
+                                    st.session_state.false_positive_analysis = result
+                                    st.session_state.image_analysis_results = result
                                 else:  # Comprehensive Analysis
                                     if model_option == "OpenAI GPT-4o":
                                         prompt = """
@@ -522,6 +660,140 @@ if 'openai_api_key' in st.session_state:
                 if analysis_type == "OCR (Text Extraction)":
                     st.subheader("Extracted Text")
                     st.text_area("Text Content", st.session_state.extracted_text, height=400)
+                elif analysis_type == "Fraud Detection":
+                    # Display fraud detection results
+                    results = st.session_state.image_analysis_results
+                    
+                    # Risk score visualization
+                    st.subheader("Fraud Risk Assessment")
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        risk_score = results.get('fraud_risk_score', 0)
+                        st.metric("Risk Score", f"{risk_score}/100")
+                        st.progress(risk_score / 100)
+                    
+                    with col2:
+                        risk_level = results.get('risk_level', 'unknown').upper()
+                        if risk_level == 'LOW':
+                            st.success(f"Risk Level: {risk_level}")
+                        elif risk_level == 'MEDIUM':
+                            st.warning(f"Risk Level: {risk_level}")
+                        else:
+                            st.error(f"Risk Level: {risk_level}")
+                    
+                    with col3:
+                        authenticity = results.get('authenticity_assessment', 'unknown').upper()
+                        if authenticity == 'AUTHENTIC':
+                            st.success(f"Authenticity: {authenticity}")
+                        elif authenticity == 'SUSPICIOUS':
+                            st.warning(f"Authenticity: {authenticity}")
+                        else:
+                            st.error(f"Authenticity: {authenticity}")
+                    
+                    # Fraud indicators
+                    st.subheader("Fraud Indicators")
+                    if 'fraud_indicators' in results and results['fraud_indicators']:
+                        for i, indicator in enumerate(results['fraud_indicators']):
+                            with st.expander(f"Indicator {i+1}: {indicator['indicator']}"):
+                                st.write(f"**Severity:** {indicator['severity'].upper()}")
+                                st.write(f"**Confidence:** {indicator['confidence']}%")
+                                st.write(f"**Explanation:** {indicator['explanation']}")
+                                
+                                if indicator['severity'].lower() == 'high':
+                                    st.error("⚠️ High Risk Indicator")
+                                elif indicator['severity'].lower() == 'medium':
+                                    st.warning("⚠️ Medium Risk Indicator")
+                                else:
+                                    st.info("ℹ️ Low Risk Indicator")
+                    else:
+                        st.success("No fraud indicators detected")
+                    
+                    # Manipulation techniques
+                    if 'manipulation_techniques' in results and results['manipulation_techniques']:
+                        st.subheader("Detected Manipulation Techniques")
+                        for technique in results['manipulation_techniques']:
+                            st.write(f"- {technique}")
+                    
+                    # Recommendations
+                    if 'recommendations' in results and results['recommendations']:
+                        st.subheader("Recommendations")
+                        for i, rec in enumerate(results['recommendations']):
+                            st.write(f"{i+1}. {rec}")
+                
+                elif analysis_type == "False Positive/Negative Detection":
+                    # Display false positive/negative detection results
+                    results = st.session_state.image_analysis_results
+                    
+                    # Score visualization
+                    st.subheader("Accuracy Assessment")
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        false_positive_score = results.get('false_positive_score', 0)
+                        st.metric("False Positive Score", f"{false_positive_score}/100")
+                        st.progress(false_positive_score / 100)
+                    
+                    with col2:
+                        false_negative_score = results.get('false_negative_score', 0)
+                        st.metric("False Negative Score", f"{false_negative_score}/100")
+                        st.progress(false_negative_score / 100)
+                    
+                    with col3:
+                        accuracy_score = results.get('overall_accuracy_score', 0)
+                        st.metric("Overall Accuracy", f"{accuracy_score}/100")
+                        st.progress(accuracy_score / 100)
+                    
+                    with col4:
+                        confidence = results.get('assessment_confidence', 0)
+                        st.metric("Assessment Confidence", f"{confidence}/100")
+                        st.progress(confidence / 100)
+                    
+                    # False positive indicators
+                    st.subheader("False Positive Indicators")
+                    if 'false_positive_indicators' in results and results['false_positive_indicators']:
+                        for i, indicator in enumerate(results['false_positive_indicators']):
+                            with st.expander(f"False Positive {i+1}: {indicator['indicator']}"):
+                                st.write(f"**Severity:** {indicator['severity'].upper()}")
+                                st.write(f"**Explanation:** {indicator['explanation']}")
+                                
+                                if indicator['severity'].lower() == 'high':
+                                    st.error("⚠️ High Risk False Positive")
+                                elif indicator['severity'].lower() == 'medium':
+                                    st.warning("⚠️ Medium Risk False Positive")
+                                else:
+                                    st.info("ℹ️ Low Risk False Positive")
+                    else:
+                        st.success("No false positive indicators detected")
+                    
+                    # False negative indicators
+                    st.subheader("False Negative Indicators")
+                    if 'false_negative_indicators' in results and results['false_negative_indicators']:
+                        for i, indicator in enumerate(results['false_negative_indicators']):
+                            with st.expander(f"False Negative {i+1}: {indicator['indicator']}"):
+                                st.write(f"**Severity:** {indicator['severity'].upper()}")
+                                st.write(f"**Explanation:** {indicator['explanation']}")
+                                
+                                if indicator['severity'].lower() == 'high':
+                                    st.error("⚠️ High Risk False Negative")
+                                elif indicator['severity'].lower() == 'medium':
+                                    st.warning("⚠️ Medium Risk False Negative")
+                                else:
+                                    st.info("ℹ️ Low Risk False Negative")
+                    else:
+                        st.success("No false negative indicators detected")
+                    
+                    # Context analysis
+                    if 'context_analysis' in results:
+                        st.subheader("Context Analysis")
+                        st.write(results['context_analysis'])
+                    
+                    # Recommendations
+                    if 'recommendations' in results and results['recommendations']:
+                        st.subheader("Recommendations")
+                        for i, rec in enumerate(results['recommendations']):
+                            st.write(f"{i+1}. {rec}")
+                
                 elif analysis_type == "Damage Assessment" or structured_output:
                     # Display structured results
                     results = st.session_state.image_analysis_results
@@ -661,9 +933,16 @@ if 'openai_api_key' in st.session_state:
                     st.session_state.saved_analyses = []
                 
                 # Save the analysis with image reference
+                if use_demo and hasattr(st.session_state, 'selected_demo_image') and st.session_state.selected_demo_image:
+                    image_name = st.session_state.selected_demo_image['name']
+                elif not use_demo and uploaded_image:
+                    image_name = uploaded_image.name
+                else:
+                    image_name = "demo_damage_image.jpg"
+                
                 analysis_entry = {
                     "timestamp": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "image_name": uploaded_image.name if not use_demo else "demo_damage_image.jpg",
+                    "image_name": image_name,
                     "analysis_type": analysis_type,
                     "model_used": model_option,
                     "analysis_result": export_data
