@@ -6,3 +6,8 @@ python-dotenv
 Pillow
 anthropic
 requests
+pandoc
+scikit-image
+opencv-python
+exifread
+pypandoc
