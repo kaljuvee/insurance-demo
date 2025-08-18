@@ -76,3 +76,22 @@ def generate_estonian_markdowns() -> None:
     batch_translate_markdowns_to_utils_estonian(sources)
 
 
+def translate_docs_to_estonian(out_dir: str = "docs/et") -> List[str]:
+    """Translate all Markdown files under docs/ to Estonian, writing .et.md files into out_dir.
+    Returns list of written file paths.
+    """
+    load_dotenv()
+    docs_dir = Path("docs")
+    outputs: List[str] = []
+    if not docs_dir.exists():
+        return outputs
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    for src in docs_dir.glob("*.md"):
+        if src.name.endswith(".et.md"):
+            continue
+        dest = out / (src.stem + ".et.md")
+        translate_markdown_file_to_estonian(str(src), str(dest))
+        outputs.append(str(dest))
+    return outputs
+
