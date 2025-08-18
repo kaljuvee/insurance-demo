@@ -12,7 +12,7 @@ import pandas as pd
 import PyPDF2
 from PIL import Image, ExifTags
 from openai import OpenAI
-from utils import load_api_keys
+from utils.setup_util import load_api_keys
 from locale_util import init_language_selector
 
 st.set_page_config(

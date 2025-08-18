@@ -1,8 +1,12 @@
 import streamlit as st
-from utils import load_api_keys
+from dotenv import load_dotenv
+from utils.setup_util import load_env, load_api_keys
 from locale_util import init_language_selector, tr
 
-# Load API keys from .env file
+# Load .env globally early
+load_dotenv()
+load_env()
+# Load API keys into session state
 api_keys_loaded = load_api_keys()
 
 st.set_page_config(

@@ -9,7 +9,7 @@ import json
 import re
 from io import StringIO
 from PIL import Image
-from utils import load_api_keys
+from utils.setup_util import load_api_keys
 from locale_util import init_language_selector
 import base64
 from pathlib import Path

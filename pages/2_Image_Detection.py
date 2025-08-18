@@ -8,7 +8,7 @@ import json
 import pandas as pd
 from openai import OpenAI
 from anthropic import Anthropic
-from utils import load_api_keys
+from utils.setup_util import load_api_keys
 from locale_util import init_language_selector
 
 st.set_page_config(
