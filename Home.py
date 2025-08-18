@@ -1,5 +1,6 @@
 import streamlit as st
 from utils import load_api_keys
+from locale_util import init_language_selector, tr
 
 # Load API keys from .env file
 api_keys_loaded = load_api_keys()
@@ -11,9 +12,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.title("Insurance Claims Analyzer")
+st.title(tr("Insurance Claims Analyzer", "Kindlustusnõuete analüsaator"))
 
-st.markdown("""
+st.markdown(tr(
+    """
 ## Welcome to the Insurance Claims Analyzer
 
 This application helps insurance professionals and policyholders analyze and compare insurance claims against policy contracts with advanced fraud detection and accuracy assessment capabilities.
@@ -63,27 +65,81 @@ This application helps insurance professionals and policyholders analyze and com
 
 ---
 *This tool uses OpenAI and Anthropic language models to extract and analyze content with advanced fraud detection capabilities.*
-""")
+""",
+    """
+## Tere tulemast kindlustusnõuete analüsaatorisse
+
+See rakendus aitab kindlustusspetsialistidel ja kindlustusvõtjatel analüüsida ning võrrelda kindlustusnõudeid poliisilepingutega. Rakendusel on sisseehitatud pettuse tuvastamine ja täpsuse hindamine.
+
+### Funktsioonid:
+
+- **Nõuete kontroll**: Laadi üles arved/nõuded ja võrdle neid poliisilepingutega
+  - **UUS**: Pildi-arvete tugi (JPG, PNG, JPEG)
+  - **UUS**: Pettuse tuvastus samm, mis tuvastab võltsitud/manipuleeritud dokumendid
+  - **UUS**: Külgribal dokumentide valik `data/` kaustast
+- **Pildi tuvastus**: Laadi üles kahjustustega vara pildid ja tuvasta tunnused
+  - **UUS**: Pettuse tuvastus manipuleeritud või lavastatud piltide avastamiseks
+  - **UUS**: Vale-positiivsete/negatiivsete hindamine skooriga
+  - **UUS**: Kahju tõsiduse hindamine
+- **Automaatne väljavõte**: AI tuvastab PDFidest ja piltidest asjakohase info
+- **Kõrvuti võrdlus**: Tuvasta hõlpsalt vastuolud nõuete ja poliiside vahel
+- **Esiletõstetud erinevused**: Kiire ülevaade võimalikest probleemidest
+- **Pettuste ennetamine**: Arvutipõhine pettuse tuvastus dokumentidele ja piltidele
+
+### Kuidas kasutada:
+
+1. Liigu külgriba abil sobivale lehele:
+   - **Nõuete kontroll**: Dokumentide võrdlus, pettuse tuvastus
+   - **Pildi tuvastus**: Kahjustuste analüüs piltidelt koos pettuse tuvastusega
+2. Laadi üles dokumendid või pildid või vali need `data/` kaustast
+3. Vali sobiv analüüsi tüüp (nt terviklik, kahju hindamine, pettuse tuvastus)
+4. Vaata detailset AI-analüüsi koos riskiskooridega
+
+### Uued pettuse tuvastuse võimalused:
+
+- **Dokumentide pettuse tuvastus**: Tuvastab manipuleerimise, vastuolud ja võltsingu tunnused
+- **Pildi pettuse tuvastus**: Tuvastab digitaalse manipuleerimise, lavastatud kahju ja ebajärjekindlused
+- **Vale-positiivsed/negatiivsed**: Tuvastab ekslikud väited või tähelepanuta jäänud kahjud
+- **Riskiskoorid**: Numbrilised riskid ja kindlustunne
+- **Raportid**: Detailne ülevaade koos soovitustega
+
+### Eelised:
+
+- Säästab aega automatiseeritud analüüsiga
+- Vähendab vigu menetluses
+- **UUS**: Ennetab pettusi
+- **UUS**: Parandab täpsust vale-positiivsete/negatiivsete tuvastusel
+- Tagab vastavuse poliisi tingimustele
+- Parandab kliendirahulolu
+- Dokumenteerib kahju tõhusalt
+- **UUS**: Vähendab pettusnõudeid
+
+---
+*See tööriist kasutab OpenAI ja Anthropic mudeleid pettuse tuvastuse ja analüüsi jaoks.*
+"""
+))
 
 # Display API key status in the sidebar
-st.sidebar.title("Navigation")
-st.sidebar.info("Select a page from the dropdown above")
+st.sidebar.title(tr("Navigation", "Navigatsioon"))
+init_language_selector()
+st.sidebar.info(tr("Select a page from the dropdown above", "Vali leht ülalolevast rippmenüüst"))
 
 # Show API key status
 st.sidebar.markdown("---")
-st.sidebar.header("API Key Status")
+st.sidebar.header(tr("API Key Status", "API võtmete olek"))
 
 if api_keys_loaded['openai_api_key']:
-    st.sidebar.success("✅ OpenAI API key loaded")
+    st.sidebar.success(tr("✅ OpenAI API key loaded", "✅ OpenAI API võti leitud"))
 else:
-    st.sidebar.warning("⚠️ OpenAI API key not found in .env file")
+    st.sidebar.warning(tr("⚠️ OpenAI API key not found in .env file", "⚠️ OpenAI API võtit ei leitud .env failist"))
 
 if api_keys_loaded['anthropic_api_key']:
-    st.sidebar.success("✅ Anthropic API key loaded")
+    st.sidebar.success(tr("✅ Anthropic API key loaded", "✅ Anthropic API võti leitud"))
 else:
-    st.sidebar.info("ℹ️ Anthropic API key not found (optional)")
+    st.sidebar.info(tr("ℹ️ Anthropic API key not found (optional)", "ℹ️ Anthropic API võti puudub (valikuline)"))
 
-st.sidebar.markdown("""
+st.sidebar.markdown(tr(
+    """
 ### Setup Instructions
 
 1. Create a `.env` file in the root directory
@@ -95,4 +151,18 @@ st.sidebar.markdown("""
 3. Restart the application if needed
 
 You can also enter API keys directly in each tool page.
-""") 
+""",
+    """
+### Seadistamine
+
+1. Loo projekti juurkausta `.env` fail
+2. Lisa API võtmed järgmises vormingus:
+   ```
+   OPENAI_API_KEY=siia_sinu_openai_võti
+   ANTHROPIC_API_KEY=siia_sinu_anthropic_võti
+   ```
+3. Taaskäivita rakendus vajadusel
+
+Võid sisestada võtmed ka otse iga lehe külgribal.
+"""
+))

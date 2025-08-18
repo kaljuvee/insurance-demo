@@ -10,6 +10,7 @@ import re
 from io import StringIO
 from PIL import Image
 from utils import load_api_keys
+from locale_util import init_language_selector
 import base64
 from pathlib import Path
 
@@ -345,6 +346,7 @@ with st.sidebar:
 # API Key input
 with st.sidebar:
     st.header("API Keys")
+    init_language_selector()
     
     # Show status of loaded API keys
     if api_keys_loaded['openai_api_key']:

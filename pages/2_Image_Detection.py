@@ -9,6 +9,7 @@ import pandas as pd
 from openai import OpenAI
 from anthropic import Anthropic
 from utils import load_api_keys
+from locale_util import init_language_selector
 
 st.set_page_config(
     page_title="Image Detection",
@@ -378,6 +379,7 @@ def json_to_df(json_data, exclude_keys=None):
 # API Key input in sidebar
 with st.sidebar:
     st.header("API Keys")
+    init_language_selector()
     
     # Show status of loaded API keys
     if api_keys_loaded['openai_api_key']:

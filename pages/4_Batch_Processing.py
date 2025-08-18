@@ -13,6 +13,7 @@ import PyPDF2
 from PIL import Image, ExifTags
 from openai import OpenAI
 from utils import load_api_keys
+from locale_util import init_language_selector
 
 st.set_page_config(
     page_title="Batch Processing",
@@ -28,6 +29,39 @@ api_keys_loaded = load_api_keys()
 
 
 # ---------- Helpers ----------
+def _json_safe(obj):
+    try:
+        import PIL
+        from PIL.TiffImagePlugin import IFDRational  # type: ignore
+    except Exception:
+        IFDRational = tuple()  # fallback no-op
+    if obj is None or isinstance(obj, (bool, int, float, str)):
+        return obj
+    # PIL rationals
+    try:
+        from PIL.TiffImagePlugin import IFDRational as _IFDRational  # type: ignore
+        if isinstance(obj, _IFDRational):
+            try:
+                return float(obj)
+            except Exception:
+                return str(obj)
+    except Exception:
+        pass
+    if isinstance(obj, bytes):
+        try:
+            return obj.decode('utf-8', errors='replace')
+        except Exception:
+            return str(obj)
+    if isinstance(obj, (list, tuple, set)):
+        return [_json_safe(x) for x in obj]
+    if isinstance(obj, dict):
+        return {str(_json_safe(k)): _json_safe(v) for k, v in obj.items()}
+    # Fallback
+    try:
+        return float(obj)
+    except Exception:
+        return str(obj)
+
 def compute_file_hash(file_path: str) -> str:
     sha256 = hashlib.sha256()
     with open(file_path, 'rb') as f:
@@ -317,6 +351,7 @@ with st.sidebar:
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
         st.success("OpenAI API key override applied")
+    init_language_selector()
 
     st.markdown("---")
     st.header("Batch Options")
@@ -462,7 +497,7 @@ if st.button("Run Batch Scan"):
 
         # Exports
         st.subheader("Export Results")
-        json_data = json.dumps(results, indent=2)
+        json_data = json.dumps(_json_safe(results), indent=2)
         st.download_button(
             label="Download JSON Report",
             data=json_data,

@@ -22,3 +22,15 @@ def load_api_keys():
         'openai_api_key': openai_api_key is not None,
         'anthropic_api_key': anthropic_api_key is not None
     } 
+
+
+def init_language_selector():
+    """Add a language switch to sidebar and set st.session_state['lang'].
+    Falling back to 'en' if not selected. Values: 'en', 'et'.
+    """
+    with st.sidebar:
+        st.markdown("---")
+        st.header("Language")
+        current = st.session_state.get('lang', 'en')
+        lang = st.radio("Select language", options=["en", "et"], index=0 if current == 'en' else 1)
+        st.session_state['lang'] = lang

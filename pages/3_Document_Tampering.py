@@ -11,6 +11,7 @@ import tempfile
 from PIL import Image, ExifTags
 from openai import OpenAI
 from utils import load_api_keys
+from locale_util import init_language_selector
 
 st.set_page_config(
     page_title="Document Tampering Detection",
@@ -293,6 +294,7 @@ with st.sidebar:
     if openai_api_key:
         st.session_state.openai_api_key = openai_api_key
         st.success("OpenAI API key override applied")
+    init_language_selector()
 
     st.markdown("---")
     st.header("Select from data/")
